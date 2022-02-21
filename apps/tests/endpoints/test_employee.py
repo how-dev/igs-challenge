@@ -228,7 +228,11 @@ class FinalUserEndpointTest(APITestCase):
         request = {
             "path": self.endpoints["employee"] + f"{self.rh_employee.id}/",
             "data": {
-                "document": "90078144191"
+                "document": "90078144191",
+                "password": "test",
+                "department": {
+                    "name": "Developer"
+                }
             }
         }
         headers = {
