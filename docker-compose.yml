@@ -1,0 +1,49 @@
+version: '3.7'
+services:
+    db:
+        image: postgres
+        env_file: core_api/.env
+        ports:
+            - "5432:5432"
+        volumes:
+            - igs_challenge:/var/lib/postgresql/data
+
+    redis:
+        image: redis
+        command: redis-server
+        ports:
+            - "6379:6379"
+
+    redis-commander:
+        image: rediscommander/redis-commander
+        environment:
+            - REDIS_HOSTS=local:redis:6379
+
+        ports:
+            - "8081:8081"
+
+    test:
+        env_file: core_api/.env
+        command: bash -c 'coverage run ./manage.py test && coverage report'
+        build: .
+        volumes:
+            -   .:/code
+
+    web:
+        build: .
+        env_file: core_api/.env
+        command:
+            bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; python manage.py runserver 0.0.0.0:8000'
+        stdin_open: true
+        tty: true
+        ports:
+            - "8000:8000"
+        volumes:
+            -   .:/code
+        depends_on:
+            - db
+            - test
+
+volumes:
+    igs_challenge:
+        external: true

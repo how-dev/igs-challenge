@@ -1,0 +1,98 @@
+Este é um arquivo para esboçar a minha abstração do problema antes de codar orientado a comportamento.
+
+
+Abstração:
+
+Eu como usuário habilitado da IGS
+Quero poder ver todos os funcionários
+Bem como criá-los, editá-los ou deletá-los.
+
+Faz sentido pra mim que o usuário habilitado para desempenhar
+essa função faça parte da mesma tabela de funcionários, em
+vista que eu posso ter a funcionalidade PROMOVER e o usuário
+promovido passa a ter um novo status, sem precisar excluir um
+usuário de um lado pra criar um em outro.
+
+Com isso, a complexidade da usabilidade reduz significativamente.
+
+Estratégia técnica:
+
+Sobrescrever o usuário padrão do Django removendo os campos:
+
+username
+user_permissions
+first_name
+last_name
+groups
+
+E adicionando os campos:
+
+document (cpf, tamanho 11, campo de texto, único)
+name (nome, tamanho máximo 255, campo de texto)
+department (departamento, ForeignKey to DepartmentModel)
+
+Uma escolha importante colocar o department como relação 1 para N
+e não como uma simples choices no campo CharField, pois assim, basta
+adicionar um department no banco de dados por meio de API ou
+diretamente no banco, que já está OK, sem gerar mais desenvolvimento,
+deploy e teste.
+
+No final a modelagem fica:
+
+|   DepartmentModel   |
+|---------------------|
+| id           |  PK  | unique
+| name         |  CH  | campo administrativo
+| date_joined  |  DT  | campo administrativo
+
+|    EmployeeModel    |
+|---------------------|
+| id           |  PK  | unique
+| name         |  CH  | campo administrativo
+| email        |  CH  | unique
+| document     |  CH  | unique
+| department   |  FK  | DepartmentModel, usado para permissões de rota
+| password     |  CH  | pbkdf2_sha (criptografia)
+| is_active    |  BL  | usado para deleção lógica
+| is_staff     |  BL  | usado para django-admin
+| is_superuser |  BL  | usado para django-admin
+| date_joined  |  DT  | campo administrativo
+| last_login   |  DT  | campo administrativo
+
+A respeito da API:
+
+base_url: http://localhost:8000/
+
+Login:
+
+Antes de falar do endpoint employee/, preciso deixar esse
+endpoint acessível apenas para usuários autenticados e permitidos
+(isto é, não adianta apenas estar logado, tem que ter a permissão
+necessária para acessar a rota).
+
+Para isso, vou usar o Token do Rest Framework e sobrescrever o objeto
+BasePermission pra bloquear rotas.
+
+A rota de login em si será uma APIView apenas com o método post e
+receberá o token no corpo da resposta.
+
+Pra utilizar esse token, é preciso enviar ele no header de cada
+requisição como:
+Key: Authorization | value: Bearer < token >
+
+Faz sentido pra mim que este token perca sua validade a cada uma hora,
+mas também não faz sentido que você esteja logado fazendo algo importante
+e perca seu login repentinamente. Então o token expira a cada uma hora, mas
+apenas quando você faz o login.
+
+Fechando essa parte, posso partir para o endpoint do employee.
+
+Employee:
+
+Pra esse endpoint, vou usar uma simples ModelViewSet, sobrescrevendo dois métodos:
+
+Um será o list, pois preciso aplicar o cacheamento para melhor desempenho da rota.
+    |__ o cacheamento deverá conter variação com base no header.
+
+Outra será o delete, pois preciso fazer com que não haja deleção física no banco,
+apenas deleção lógica.
