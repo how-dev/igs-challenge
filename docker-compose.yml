@@ -24,7 +24,7 @@ services:
 
     test:
         env_file: core_api/.env
-        command: bash -c 'coverage run ./manage.py test && coverage report'
+        command: bash -c 'python manage.py makemigrations && python manage.py migrate && coverage run ./manage.py test && coverage report'
         build: .
         volumes:
             -   .:/code
