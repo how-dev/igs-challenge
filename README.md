@@ -38,13 +38,13 @@ docker-compose up --build
 6. Open another terminal and access the docker machine with the following command:
 
 ```commandline
-docker exec -it igs-challenge /bin/bash
+docker exec -it igs-challenge_web_1 /bin/bash
 ```
 
 or (to zsh system):
 
 ```commandline
-docker exec -it igs-challenge /bin/sh
+docker exec -it igs-challenge_web_1 /bin/sh
 ```
 
 7. Run the following command:
